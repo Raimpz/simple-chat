@@ -4,6 +4,7 @@ import com.simplechat.backend.user.User;
 import com.simplechat.backend.user.UserRepository;
 import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 public class MessageService {
@@ -26,7 +27,13 @@ public class MessageService {
         message.setContent(request.content());
         message.setTimestamp(LocalDateTime.now());
 
-        // 3. Save it to the database
         return messageRepository.save(message);
+    }
+
+    public List<Message> getChatHistory(User currentUser, Long friendId) {
+        return messageRepository.findBySenderIdAndRecipientIdOrSenderIdAndRecipientIdOrderByTimestamp(
+            currentUser.getId(), friendId,
+            friendId, currentUser.getId()
+        );
     }
 }
