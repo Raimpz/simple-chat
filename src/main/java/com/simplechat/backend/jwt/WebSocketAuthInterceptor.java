@@ -31,19 +31,26 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
 
             if (authHeader != null && authHeader.startsWith("Bearer ")) {
                 String jwt = authHeader.substring(7);
-                String username = jwtService.extractUsername(jwt);
+                
+                try {
+                    String username = jwtService.extractUsername(jwt);
 
-                if (username != null) {
-                    UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+                    if (username != null) {
+                        UserDetails userDetails = userDetailsService.loadUserByUsername(username);
 
-                    if (jwtService.isTokenValid(jwt, userDetails.getUsername())) {
-                        UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                                userDetails,
-                                null,
-                                userDetails.getAuthorities()
-                        );
-                        accessor.setUser(authToken);
+                        if (jwtService.isTokenValid(jwt, userDetails.getUsername())) {
+                            UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                                    userDetails,
+                                    null,
+                                    userDetails.getAuthorities()
+                            );
+
+                            accessor.setUser(authToken); 
+                            System.out.println("WebSocket: User authenticated - " + authToken.getName());
+                        }
                     }
+                } catch (Exception e) {
+                    System.err.println("WebSocket: Authentication failed: " + e.getMessage());
                 }
             }
         }

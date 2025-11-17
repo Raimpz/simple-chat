@@ -18,6 +18,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ token, currentUser }) => {
     const [newMessage, setNewMessage] = useState<string>('');
     const stompClientRef = useRef<Client | null>(null);
     const selectedFriendRef = useRef<UserDto | null>(null);
+    const currentUserRef = useRef<UserDto>(currentUser);
 
     useEffect(() => {
         const fetchFriends = async () => {
@@ -25,12 +26,8 @@ const ChatPage: React.FC<ChatPageProps> = ({ token, currentUser }) => {
                 setLoadingFriends(true);
                 const response = await apiClient.get('/friends');
                 setFriends(response.data);
-            } catch (err) {
-                console.error(err);
-            } 
-            finally {
-                setLoadingFriends(false);
-            }
+            } catch (err) { console.error(err); } 
+            finally { setLoadingFriends(false); }
         };
         fetchFriends();
     }, []);
@@ -41,13 +38,24 @@ const ChatPage: React.FC<ChatPageProps> = ({ token, currentUser }) => {
             connectHeaders: {
                 Authorization: `Bearer ${token}`,
             },
+            heartbeatOutgoing: 10000,
+            heartbeatIncoming: 10000,
+            debug: (str) => {
+                console.log(new Date(), 'STOMP: ' + str);
+            },
             onConnect: () => {
                 console.log('WebSocket Connected!');
-                client.subscribe('/user/private', (message) => {
+                client.subscribe('/user/queue/private', (message) => {
+                    console.log('>>> MESSAGE RECEIVED:', message.body);
                     const newMsg = JSON.parse(message.body) as Message;
                     const friend = selectedFriendRef.current;
+                    const user = currentUserRef.current; 
 
-                    if (friend && (newMsg.sender.id === friend.id || newMsg.recipient.id === friend.id)) {
+                    const isRelevant = 
+                        (friend && newMsg.sender.id === friend.id && newMsg.recipient.id === user.id) ||
+                        (friend && newMsg.sender.id === user.id && newMsg.recipient.id === friend.id);
+                    
+                    if (isRelevant) {
                         setMessages((prevMessages) => [...prevMessages, newMsg]);
                     }
                 });
@@ -74,18 +82,18 @@ const ChatPage: React.FC<ChatPageProps> = ({ token, currentUser }) => {
         selectedFriendRef.current = selectedFriend;
     }, [selectedFriend]);
 
+    useEffect(() => {
+        currentUserRef.current = currentUser;
+    }, [currentUser]);
+
     const handleFriendClick = async (friend: UserDto) => {
         try {
             setSelectedFriend(friend);
             setLoadingMessages(true);
             const response = await apiClient.get<Message[]>(`/messages/${friend.id}`);
             setMessages(response.data);
-        } catch (err) {
-            console.error(err);
-        } 
-        finally {
-            setLoadingMessages(false);
-        }
+        } catch (err) { console.error(err); } 
+        finally { setLoadingMessages(false); }
     };
 
     const handleSendMessage = (e: React.FormEvent) => {
@@ -107,58 +115,55 @@ const ChatPage: React.FC<ChatPageProps> = ({ token, currentUser }) => {
         }
     };
 
-    if (loadingFriends) {
-        return <div>Loading...</div>;
-    }
+    if (loadingFriends) { return <div>Loading...</div>; }
 
     return (
         <div className="chat-container">
-        <div className="sidebar">
-            <h2>Friends</h2>
-            <ul className="friend-list">
-                {friends.map((friend) => (
-                    <li
-                    key={friend.id}
-                    className={`friend-item ${selectedFriend?.id === friend.id ? 'active' : ''}`}
-                    onClick={() => handleFriendClick(friend)}
-                    >
-                    {friend.username}
-                    </li>
-                ))}
-            </ul>
-        </div>
-
-        <div className="chat-window">
-            {selectedFriend ? (
-            <>
-                <div className="chat-header"><h2>Chat with {selectedFriend.username}</h2></div>
-                <div className="message-list">
-                {loadingMessages ? (<p>Loading messages...</p>) : (
-                    messages.map((msg) => (
-                    <div 
-                        key={msg.id} 
-                        className={`message-item ${msg.sender.id === currentUser.id ? 'sent' : 'received'}`}
-                    >
-                        <strong>{msg.sender.id === currentUser.id ? 'You' : msg.sender.username}:</strong> 
-                        {msg.content}
+            <div className="sidebar">
+                <h2>Friends</h2>
+                <ul className="friend-list">
+                    {friends.map((friend) => (
+                        <li
+                        key={friend.id}
+                        className={`friend-item ${selectedFriend?.id === friend.id ? 'active' : ''}`}
+                        onClick={() => handleFriendClick(friend)}
+                        >
+                        {friend.username}
+                        </li>
+                    ))}
+                </ul>
+            </div>
+            <div className="chat-window">
+                {selectedFriend ? (
+                <>
+                    <div className="chat-header"><h2>Chat with {selectedFriend.username}</h2></div>
+                    <div className="message-list">
+                    {loadingMessages ? (<p>Loading messages...</p>) : (
+                        messages.map((msg) => (
+                        <div 
+                            key={msg.id} 
+                            className={`message-item ${msg.sender.id === currentUser.id ? 'sent' : 'received'}`}
+                        >
+                            <strong>{msg.sender.id === currentUser.id ? 'You' : msg.sender.username}:</strong> 
+                            {msg.content}
+                        </div>
+                        ))
+                    )}
                     </div>
-                    ))
+                    <form className="message-input-area" onSubmit={handleSendMessage}>
+                        <input
+                            type="text"
+                            placeholder="Type a message..."
+                            value={newMessage}
+                            onChange={(e) => setNewMessage(e.target.value)}
+                        />
+                        <button type="submit">Send</button>
+                    </form>
+                </>
+                ) : (
+                <h2 style={{ padding: '20px' }}>Select a friend to chat</h2>
                 )}
-                </div>
-                <form className="message-input-area" onSubmit={handleSendMessage}>
-                    <input
-                        type="text"
-                        placeholder="Type a message..."
-                        value={newMessage}
-                        onChange={(e) => setNewMessage(e.target.value)}
-                    />
-                    <button type="submit">Send</button>
-                </form>
-            </>
-            ) : (
-            <h2 style={{ padding: '20px' }}>Select a friend to chat</h2>
-            )}
-        </div>
+            </div>
         </div>
     );
 };

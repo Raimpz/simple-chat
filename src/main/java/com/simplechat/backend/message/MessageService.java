@@ -1,10 +1,11 @@
 package com.simplechat.backend.message;
 
+import java.util.stream.Collectors;
+import java.util.List;
 import com.simplechat.backend.user.User;
 import com.simplechat.backend.user.UserRepository;
 import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Service
 public class MessageService {
@@ -30,10 +31,13 @@ public class MessageService {
         return messageRepository.save(message);
     }
 
-    public List<Message> getChatHistory(User currentUser, Long friendId) {
-        return messageRepository.findBySenderIdAndRecipientIdOrSenderIdAndRecipientIdOrderByTimestamp(
+    public List<MessageDto> getChatHistory(User currentUser, Long friendId) {
+    return messageRepository.findBySenderIdAndRecipientIdOrSenderIdAndRecipientIdOrderByTimestamp(
             currentUser.getId(), friendId,
             friendId, currentUser.getId()
-        );
+    )
+    .stream()
+    .map(MessageDto::fromMessage)
+    .collect(Collectors.toList());
     }
 }
