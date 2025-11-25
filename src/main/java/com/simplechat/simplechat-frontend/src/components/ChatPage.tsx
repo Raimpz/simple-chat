@@ -3,6 +3,7 @@ import apiClient from '../api';
 import { UserDto, Message } from '../types';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
+import FriendsModal from './FriendsModal';
 
 interface ChatPageProps {
     token: string;
@@ -16,6 +17,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ token, currentUser }) => {
     const [messages, setMessages] = useState<Message[]>([]);
     const [loadingMessages, setLoadingMessages] = useState<boolean>(false);
     const [newMessage, setNewMessage] = useState<string>('');
+    const [isFriendsModalOpen, setIsFriendsModalOpen] = useState(false);
     const stompClientRef = useRef<Client | null>(null);
     const selectedFriendRef = useRef<UserDto | null>(null);
     const currentUserRef = useRef<UserDto>(currentUser);
@@ -121,6 +123,12 @@ const ChatPage: React.FC<ChatPageProps> = ({ token, currentUser }) => {
         <div className="chat-container">
             <div className="sidebar">
                 <h2>Friends</h2>
+                <button 
+                    className="add-friend-btn"
+                    onClick={() => setIsFriendsModalOpen(true)}
+                >
+                    + Add Friend
+                </button>
                 <ul className="friend-list">
                     {friends.map((friend) => (
                         <li
@@ -164,6 +172,13 @@ const ChatPage: React.FC<ChatPageProps> = ({ token, currentUser }) => {
                 <h2 style={{ padding: '20px' }}>Select a friend to chat</h2>
                 )}
             </div>
+            <FriendsModal 
+                isOpen={isFriendsModalOpen} 
+                onClose={() => {
+                    setIsFriendsModalOpen(false);
+                    window.location.reload(); 
+                }} 
+            />
         </div>
     );
 };

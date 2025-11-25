@@ -10,3 +10,11 @@ export interface Message {
     sender: UserDto;
     recipient: UserDto;
 }
+
+export interface FriendRequest {
+    id: number;
+    sender: UserDto;
+    receiver: UserDto;
+    status: 'PENDING' | 'ACCEPTED' | 'DECLINED';
+    createdAt: string;
+}
