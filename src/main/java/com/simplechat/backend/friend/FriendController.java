@@ -7,6 +7,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/friends")
@@ -26,18 +27,22 @@ public class FriendController {
         try {
             User sender = (User) authentication.getPrincipal();
             FriendRequest newRequest = friendService.sendFriendRequest(sender, receiverId);
-            return ResponseEntity.status(201).body(newRequest);
+            return ResponseEntity.status(201).body(FriendRequestDto.fromEntity(newRequest));
         } catch (Exception e) {
             return ResponseEntity.status(400).body(e.getMessage());
         }
     }
 
     @GetMapping("/pending")
-    public ResponseEntity<List<FriendRequest>> getPendingRequests(Authentication authentication) {
+    public ResponseEntity<List<FriendRequestDto>> getPendingRequests(Authentication authentication) {
         User currentUser = (User) authentication.getPrincipal();
         List<FriendRequest> requests = friendService.getPendingRequests(currentUser);
 
-        return ResponseEntity.ok(requests);
+        List<FriendRequestDto> dtos = requests.stream()
+                .map(FriendRequestDto::fromEntity)
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(dtos);
     }
 
     @PostMapping("/respond/{requestId}")
@@ -58,7 +63,8 @@ public class FriendController {
                     requestId, 
                     response.status()
             );
-            return ResponseEntity.ok(updatedRequest);
+
+            return ResponseEntity.ok(FriendRequestDto.fromEntity(updatedRequest));
         } catch (Exception e) {
             return ResponseEntity.status(400).body(e.getMessage());
         }
