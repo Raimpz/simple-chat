@@ -14,6 +14,7 @@ import java.util.stream.Collectors;
 import java.util.Set;
 import org.springframework.stereotype.Controller;
 import java.security.Principal;
+import jakarta.validation.Valid;
 
 @Controller
 public class ChatController {
@@ -34,7 +35,7 @@ public class ChatController {
     }
 
     @MessageMapping("/chat.send")
-    public void sendMessage(@Payload ChatMessageRequest chatMessage, Principal principal) {
+    public void sendMessage(@Payload @Valid ChatMessageRequest chatMessage, Principal principal) {
         String username = principal.getName();
 
         User sender = userRepository.findByUsername(username).orElseThrow(() -> new IllegalArgumentException("Sender not found"));
