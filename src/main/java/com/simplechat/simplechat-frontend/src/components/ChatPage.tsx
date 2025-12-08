@@ -4,6 +4,7 @@ import { UserDto, Message } from '../types';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import FriendsModal from './FriendsModal';
+import { format } from 'date-fns';
 
 interface ChatPageProps {
     token: string;
@@ -18,9 +19,11 @@ const ChatPage: React.FC<ChatPageProps> = ({ token, currentUser }) => {
     const [loadingMessages, setLoadingMessages] = useState<boolean>(false);
     const [newMessage, setNewMessage] = useState<string>('');
     const [isFriendsModalOpen, setIsFriendsModalOpen] = useState(false);
+    const [unreadCounts, setUnreadCounts] = useState<Record<number, number>>({});
     const stompClientRef = useRef<Client | null>(null);
     const selectedFriendRef = useRef<UserDto | null>(null);
     const currentUserRef = useRef<UserDto>(currentUser);
+    const messagesEndRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         const fetchFriends = async () => {
@@ -28,8 +31,13 @@ const ChatPage: React.FC<ChatPageProps> = ({ token, currentUser }) => {
                 setLoadingFriends(true);
                 const response = await apiClient.get('/friends');
                 setFriends(response.data);
-            } catch (err) { console.error(err); } 
-            finally { setLoadingFriends(false); }
+            }
+            catch (err) {
+                console.error(err);
+            } 
+            finally {
+                setLoadingFriends(false);
+            }
         };
         fetchFriends();
     }, []);
@@ -42,23 +50,25 @@ const ChatPage: React.FC<ChatPageProps> = ({ token, currentUser }) => {
             },
             heartbeatOutgoing: 10000,
             heartbeatIncoming: 10000,
-            debug: (str) => {
-                console.log(new Date(), 'STOMP: ' + str);
-            },
             onConnect: () => {
-                console.log('WebSocket Connected!');
                 client.subscribe('/user/queue/private', (message) => {
-                    console.log('>>> MESSAGE RECEIVED:', message.body);
                     const newMsg = JSON.parse(message.body) as Message;
                     const friend = selectedFriendRef.current;
                     const user = currentUserRef.current; 
 
-                    const isRelevant = 
+                    const isOpenChat = 
                         (friend && newMsg.sender.id === friend.id && newMsg.recipient.id === user.id) ||
                         (friend && newMsg.sender.id === user.id && newMsg.recipient.id === friend.id);
-                    
-                    if (isRelevant) {
+
+                    if (isOpenChat) {
                         setMessages((prevMessages) => [...prevMessages, newMsg]);
+                    } else {
+                        if (newMsg.recipient.id === user.id) {
+                            setUnreadCounts((prev) => ({
+                                ...prev,
+                                [newMsg.sender.id]: (prev[newMsg.sender.id] || 0) + 1
+                            }));
+                        }
                     }
                 });
             },
@@ -76,7 +86,6 @@ const ChatPage: React.FC<ChatPageProps> = ({ token, currentUser }) => {
 
         return () => {
             client.deactivate();
-            console.log("WebSocket Disconnected");
         };
     }, [token]);
 
@@ -88,14 +97,27 @@ const ChatPage: React.FC<ChatPageProps> = ({ token, currentUser }) => {
         currentUserRef.current = currentUser;
     }, [currentUser]);
 
+    useEffect(() => {
+        scrollToBottom();
+    }, [messages]);
+
     const handleFriendClick = async (friend: UserDto) => {
+        setUnreadCounts((prev) => ({
+            ...prev,
+            [friend.id]: 0 
+        }));
+
         try {
             setSelectedFriend(friend);
             setLoadingMessages(true);
             const response = await apiClient.get<Message[]>(`/messages/${friend.id}`);
             setMessages(response.data);
-        } catch (err) { console.error(err); } 
-        finally { setLoadingMessages(false); }
+        } catch (err) {
+            console.error(err);
+        } 
+        finally {
+            setLoadingMessages(false);
+        }
     };
 
     const handleSendMessage = (e: React.FormEvent) => {
@@ -117,6 +139,10 @@ const ChatPage: React.FC<ChatPageProps> = ({ token, currentUser }) => {
         }
     };
 
+    const scrollToBottom = () => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    };
+
     if (loadingFriends) { return <div>Loading...</div>; }
 
     return (
@@ -132,11 +158,18 @@ const ChatPage: React.FC<ChatPageProps> = ({ token, currentUser }) => {
                 <ul className="friend-list">
                     {friends.map((friend) => (
                         <li
-                        key={friend.id}
-                        className={`friend-item ${selectedFriend?.id === friend.id ? 'active' : ''}`}
-                        onClick={() => handleFriendClick(friend)}
+                            key={friend.id}
+                            className={`friend-item ${selectedFriend?.id === friend.id ? 'active' : ''}`}
+                            onClick={() => handleFriendClick(friend)}
                         >
-                        {friend.username}
+                            <div className="friend-item-content">
+                                {friend.username}
+                                {unreadCounts[friend.id] > 0 && (
+                                    <span className="unread-badge">
+                                        {unreadCounts[friend.id]}
+                                    </span>
+                                )}
+                            </div>
                         </li>
                     ))}
                 </ul>
@@ -146,17 +179,24 @@ const ChatPage: React.FC<ChatPageProps> = ({ token, currentUser }) => {
                 <>
                     <div className="chat-header"><h2>Chat with {selectedFriend.username}</h2></div>
                     <div className="message-list">
-                    {loadingMessages ? (<p>Loading messages...</p>) : (
-                        messages.map((msg) => (
-                        <div 
-                            key={msg.id} 
-                            className={`message-item ${msg.sender.id === currentUser.id ? 'sent' : 'received'}`}
-                        >
-                            <strong>{msg.sender.id === currentUser.id ? 'You' : msg.sender.username}:</strong> 
-                            {msg.content}
-                        </div>
-                        ))
-                    )}
+                        {loadingMessages ? (<p>Loading messages...</p>) : (
+                            messages.map((msg) => (
+                                <div 
+                                    key={msg.id} 
+                                    className={`message-item ${msg.sender.id === currentUser.id ? 'sent' : 'received'}`}
+                                >
+                                    <div className="message-content">
+                                        {msg.content}
+                                    </div>
+                                    <div className="message-meta">
+                                        <span className="message-time">
+                                            {format(new Date(msg.timestamp), 'HH:mm')}
+                                        </span>
+                                    </div>
+                                </div>
+                            ))
+                        )}
+                        <div ref={messagesEndRef} />
                     </div>
                     <form className="message-input-area" onSubmit={handleSendMessage}>
                         <input
