@@ -5,6 +5,9 @@ import java.util.List;
 import com.simplechat.backend.user.User;
 import com.simplechat.backend.user.UserRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import java.time.LocalDateTime;
 
 @Service
@@ -31,13 +34,17 @@ public class MessageService {
         return messageRepository.save(message);
     }
 
-    public List<MessageDto> getChatHistory(User currentUser, Long friendId) {
-    return messageRepository.findBySenderIdAndRecipientIdOrSenderIdAndRecipientIdOrderByTimestamp(
-            currentUser.getId(), friendId,
-            friendId, currentUser.getId()
-    )
-    .stream()
-    .map(MessageDto::fromMessage)
-    .collect(Collectors.toList());
+    public List<MessageDto> getChatHistory(User currentUser, Long friendId, int page) {
+        Pageable pageable = PageRequest.of(page, 20);
+
+        return messageRepository.findBySenderIdAndRecipientIdOrSenderIdAndRecipientIdOrderByTimestampDesc(
+                currentUser.getId(), friendId,
+                friendId, currentUser.getId(),
+                pageable
+        )
+        .stream()
+        .map(MessageDto::fromMessage)
+        .sorted((m1, m2) -> m1.getTimestamp().compareTo(m2.getTimestamp()))
+        .collect(Collectors.toList());
     }
 }
