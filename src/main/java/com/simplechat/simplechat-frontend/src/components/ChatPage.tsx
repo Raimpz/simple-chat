@@ -28,9 +28,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ token, currentUser }) => {
     const currentUserRef = useRef<UserDto>(currentUser);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const topSentinelRef = useRef<HTMLDivElement>(null);
-    const messageContainerRef = useRef<HTMLDivElement>(null); // New Ref for the container
-
-    // --- NEW: Lock to prevent observer from firing during initial scroll ---
+    const messageContainerRef = useRef<HTMLDivElement>(null);
     const isInitializing = useRef(false);
 
     useEffect(() => {
@@ -106,13 +104,12 @@ const ChatPage: React.FC<ChatPageProps> = ({ token, currentUser }) => {
         currentUserRef.current = currentUser;
     }, [currentUser]);
 
-    // --- FIXED OBSERVER LOGIC ---
     useEffect(() => {
         const observer = new IntersectionObserver(
             entries => {
-                // ADDED CHECK: !isInitializing.current
                 if (entries[0].isIntersecting && hasMore && !loadingMessages && messages.length > 0 && !isInitializing.current) {
                     const nextPage = page + 1;
+
                     setPage(nextPage);
 
                     if (selectedFriend) {
@@ -134,14 +131,12 @@ const ChatPage: React.FC<ChatPageProps> = ({ token, currentUser }) => {
         try {
             if (pageNum === 0) {
                 setLoadingMessages(true);
-                isInitializing.current = true; // LOCK: Don't let observer fire
+                isInitializing.current = true;
             }
 
-            // Capture current height before adding new messages (for pagination scroll fix)
             const container = messageContainerRef.current;
             const previousHeight = container?.scrollHeight || 0;
             const previousScrollTop = container?.scrollTop || 0;
-
             const response = await apiClient.get<Message[]>(`/messages/${friendId}?page=${pageNum}`);
             const newMessages = response.data;
 
@@ -151,25 +146,17 @@ const ChatPage: React.FC<ChatPageProps> = ({ token, currentUser }) => {
 
             if (pageNum === 0) {
                 setMessages(newMessages);
-                // Scroll to bottom, THEN release the lock
                 setTimeout(() => {
                     scrollToBottom();
-                    // Small delay to ensure scroll happens before we enable observer again
                     setTimeout(() => {
-                        isInitializing.current = false; // UNLOCK
+                        isInitializing.current = false;
                     }, 500); 
                 }, 100); 
             } else {
-                // Pagination load
                 setMessages((prev) => [...newMessages, ...prev]);
-                
-                // --- SCROLL POSITION FIX ---
-                // After the DOM updates, we need to adjust scroll so we don't jump to top
-                // We use requestAnimationFrame or setTimeout to wait for render
                 setTimeout(() => {
                     if (container) {
                         const newHeight = container.scrollHeight;
-                        // Calculate how much the content grew and adjust scroll
                         container.scrollTop = newHeight - previousHeight + previousScrollTop;
                     }
                 }, 0);
@@ -177,7 +164,6 @@ const ChatPage: React.FC<ChatPageProps> = ({ token, currentUser }) => {
         } catch (err) {
             console.error(err);
         } finally {
-                // Only turn off loading immediately if not page 0 (page 0 handles it after scroll)
                 setLoadingMessages(false);
         }
     };
@@ -192,7 +178,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ token, currentUser }) => {
 
         setPage(0);
         setHasMore(true);
-        setMessages([]); // Clear previous messages immediately
+        setMessages([]);
 
         await fetchMessages(friend.id, 0);
     };
@@ -255,15 +241,9 @@ const ChatPage: React.FC<ChatPageProps> = ({ token, currentUser }) => {
                 {selectedFriend ? (
                 <>
                     <div className="chat-header"><h2>Chat with {selectedFriend.username}</h2></div>
-                    
-                    {/* Added ref={messageContainerRef} here */}
                     <div className="message-list" ref={messageContainerRef}>
                         <div ref={topSentinelRef} style={{ height: '10px' }} />
-                        
-                        {/* Only show "Loading history" if we are PAGINATING (page > 0) */}
                         {page > 0 && loadingMessages && <p style={{textAlign:'center', color:'#888'}}>Loading history...</p>}
-
-                        {/* If Page 0 is loading, show generic loading */}
                         {page === 0 && loadingMessages ? (
                             <p style={{padding: '20px', textAlign: 'center'}}>Loading messages...</p>
                         ) : (
