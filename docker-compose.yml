@@ -1,34 +1,34 @@
 version: '3.8'
 
 services:
-  # 1. Database
   postgres:
     image: postgres:15-alpine
     container_name: simplechat-db
     environment:
-      POSTGRES_DB: simplechat
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
     ports:
       - "5432:5432"
     volumes:
       - db-data:/var/lib/postgresql/data
 
-  # 2. Backend
   backend:
-    build: .  # <--- CHANGED: Build from current directory (Root)
+    build: .
     container_name: simplechat-backend
     ports:
-      - "8081:8081"
+      - "${SERVER_PORT}:${SERVER_PORT}"
     environment:
       DB_HOST: postgres
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
     depends_on:
       - postgres
     restart: always
 
-  # 3. Frontend
   frontend:
-    # <--- CHANGED: Pointing to your nested frontend folder
     build: ./src/main/java/com/simplechat/simplechat-frontend 
     container_name: simplechat-frontend
     ports:
