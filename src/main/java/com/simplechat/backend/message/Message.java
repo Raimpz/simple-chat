@@ -1,6 +1,7 @@
 package com.simplechat.backend.message;
 
 import com.simplechat.backend.user.User;
+import com.simplechat.backend.util.AttributeEncryptor;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
@@ -13,6 +14,7 @@ public class Message {
     private Long id;
 
     @Column(nullable = false)
+    @Convert(converter = AttributeEncryptor.class)
     private String content;
 
     @Column(nullable = false)
