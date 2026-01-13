@@ -30,6 +30,12 @@ public class User implements UserDetails {
     @Column(nullable = false)
     private String passwordHash;
 
+    @Column(name = "verification_code")
+    private String verificationCode;
+
+    @Column(nullable = false)
+    private boolean enabled = false;
+
     public Long getId() {
         return id;
     }
@@ -52,6 +58,20 @@ public class User implements UserDetails {
 
     public void setPasswordHash(String passwordHash) {
         this.passwordHash = passwordHash;
+    }
+
+    public String getVerificationCode() {
+        return verificationCode;
+    }
+
+    public void setVerificationCode(String verificationCode) { this.verificationCode = verificationCode; }
+
+    public boolean isEnabled() {
+        return enabled;
+    }
+
+    public void setEnabled(boolean enabled) {
+        this.enabled = enabled;
     }
 
     @Override
@@ -84,8 +104,4 @@ public class User implements UserDetails {
         return true;
     }
 
-    @Override
-    public boolean isEnabled() {
-        return true;
-    }
 }

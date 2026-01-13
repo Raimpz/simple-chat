@@ -25,6 +25,8 @@ services:
       DB_PASSWORD: ${DB_PASSWORD}
       JWT_SECRET: ${JWT_SECRET}
       ENCRYPTION_SECRET: ${ENCRYPTION_KEY}
+      SPRING_MAIL_HOST: mailhog
+      SPRING_MAIL_PORT: 1025
     depends_on:
       - postgres
     restart: always
@@ -36,6 +38,13 @@ services:
       - "3003:80"
     depends_on:
       - backend
+
+  mailhog:
+    image: mailhog/mailhog
+    container_name: simplechat-mail
+    ports:
+      - "1025:1025"
+      - "8025:8025"
 
 volumes:
   db-data:

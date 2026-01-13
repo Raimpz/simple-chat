@@ -30,13 +30,17 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0 20px;
+  padding: 10px 20px;
   background-color: #242424;
   border-bottom: 1px solid #333;
 }
 
 .app-header h1 {
   margin: 10px 0;
+}
+
+.app-logo {
+  width: 150px;
 }
 
 .logout-button {

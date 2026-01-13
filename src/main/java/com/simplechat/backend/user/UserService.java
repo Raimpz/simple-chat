@@ -2,6 +2,8 @@ package com.simplechat.backend.user;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class UserService {
@@ -30,6 +32,31 @@ public class UserService {
         String hashedPassword = passwordEncoder.encode(request.password());
         newUser.setPasswordHash(hashedPassword);
 
+        String code = UUID.randomUUID().toString().substring(0, 6);
+        newUser.setVerificationCode(code);
+        newUser.setEnabled(false);
+
         return userRepository.save(newUser);
+    }
+
+    public boolean verifyUser(String email, String code) {
+        Optional<User> userOptional = userRepository.findByEmail(email);
+
+        if (userOptional.isPresent()) {
+            User user = userOptional.get();
+
+            if (code.equals(user.getVerificationCode())) {
+                user.setEnabled(true);
+                user.setVerificationCode(null);
+                userRepository.save(user);
+
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public boolean isUserEnabled(String username) {
+        return userRepository.findByUsername(username).map(User::isEnabled).orElse(false);
     }
 }
