@@ -85,4 +85,32 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Invalid username or password"));
         }
     }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(@RequestBody Map<String, String> payload) {
+        String email = payload.get("email");
+        try {
+            userService.requestPasswordReset(email);
+            User user = userService.getUserByEmail(email);
+            emailService.sendPasswordResetEmail(user.getEmail(), user.getResetCode());
+
+            return ResponseEntity.ok(Map.of("message", "Reset code sent to email"));
+        } catch (Exception e) {
+            return ResponseEntity.status(400).body(Map.of("error", "Email not found"));
+        }
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(@RequestBody Map<String, String> payload) {
+        String email = payload.get("email");
+        String code = payload.get("code");
+        String newPassword = payload.get("newPassword");
+
+        try {
+            userService.resetPassword(email, code, newPassword);
+            return ResponseEntity.ok(Map.of("message", "Password changed successfully"));
+        } catch (Exception e) {
+            return ResponseEntity.status(400).body(Map.of("error", "Something went wrong"));
+        }
+    }
 }

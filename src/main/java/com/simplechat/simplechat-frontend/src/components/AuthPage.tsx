@@ -7,7 +7,7 @@ interface AuthPageProps {
 }
 
 const AuthPage: React.FC<AuthPageProps> = ({ onLogin }) => {
-    type AuthView = 'LOGIN' | 'REGISTER' | 'VERIFY';
+    type AuthView = 'LOGIN' | 'REGISTER' | 'VERIFY' | 'FORGOT' | 'RESET';
 
     const [view, setView] = useState<AuthView>('LOGIN');
     const [username, setUsername] = useState<string>('');
@@ -39,6 +39,25 @@ const AuthPage: React.FC<AuthPageProps> = ({ onLogin }) => {
 
                 setSuccessMsg('Registration successful! Please check your email for the code.');
                 setView('VERIFY'); 
+            } else if (view === 'FORGOT') {
+                await apiClient.post('/auth/forgot-password', {
+                    email
+                });
+
+                setSuccessMsg('Code sent! Check your email.');
+                setView('RESET');
+            
+            } else if (view === 'RESET') {
+                await apiClient.post('/auth/reset-password', {
+                    email,
+                    code,
+                    newPassword: password
+                });
+
+                setSuccessMsg('Password reset! Please log in.');
+                setView('LOGIN');
+                setPassword('');
+                setCode('');
             } else {
                 await apiClient.post('/auth/verify', {
                     email,
@@ -73,6 +92,8 @@ const AuthPage: React.FC<AuthPageProps> = ({ onLogin }) => {
                     {view === 'LOGIN' && 'Login'}
                     {view === 'REGISTER' && 'Create Account'}
                     {view === 'VERIFY' && 'Verify Account'}
+                    {view === 'FORGOT' && 'Reset Password'}
+                    {view === 'RESET' && 'Set New Password'}
                 </h2>
 
                 {error && <p className="error-message" style={{color: 'red'}}>{error}</p>}
@@ -86,7 +107,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ onLogin }) => {
                         required
                     />
                 )}
-                {(view === 'REGISTER' || view === 'VERIFY') && (
+                {(view === 'REGISTER' || view === 'VERIFY' || view === 'FORGOT' || view === 'RESET') && (
                     <input
                         type="email"
                         placeholder="Email"
@@ -95,7 +116,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ onLogin }) => {
                         required
                     />
                 )}
-                {view !== 'VERIFY' && (
+                {(view === 'LOGIN' || view === 'REGISTER' || view === 'RESET') && (
                     <input
                         type="password"
                         placeholder="Password"
@@ -104,7 +125,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ onLogin }) => {
                         required
                     />
                 )}
-                {view === 'VERIFY' && (
+                {(view === 'VERIFY' || view === 'RESET') && (
                     <input
                         type="text"
                         placeholder="Enter 6-digit Code"
@@ -124,8 +145,11 @@ const AuthPage: React.FC<AuthPageProps> = ({ onLogin }) => {
                         <button onClick={() => switchView('REGISTER')} className="toggle-button">
                             Need an account? Register
                         </button>
-                        <button onClick={() => switchView('VERIFY')} className="toggle-button" style={{fontSize: '0.9em', color: '#888'}}>
+                        <button onClick={() => switchView('VERIFY')} className="toggle-button">
                             Have a code? Verify Account
+                        </button>
+                        <button onClick={() => switchView('FORGOT')}  className="toggle-button">
+                            Forgot Password?
                         </button>
                     </>
                 )}

@@ -36,6 +36,12 @@ public class User implements UserDetails {
     @Column(nullable = false)
     private boolean enabled = false;
 
+    @Column(name = "reset_code")
+    private String resetCode;
+
+    @Column(name = "reset_expiry")
+    private java.time.LocalDateTime resetExpiry;
+
     public Long getId() {
         return id;
     }
@@ -72,6 +78,20 @@ public class User implements UserDetails {
 
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
+    }
+
+    public String getResetCode() {
+        return resetCode;
+    }
+
+    public void setResetCode(String resetCode) { this.resetCode = resetCode; }
+
+    public java.time.LocalDateTime getResetExpiry() {
+        return resetExpiry;
+    }
+
+    public void setResetExpiry(java.time.LocalDateTime resetExpiry) {
+        this.resetExpiry = resetExpiry;
     }
 
     @Override

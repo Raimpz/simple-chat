@@ -23,4 +23,15 @@ public class EmailService {
         mailSender.send(message);
         System.out.println("Mail sent to " + toEmail);
     }
+
+    public void sendPasswordResetEmail(String toEmail, String code) {
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom("noreply@simplechat.com");
+        message.setTo(toEmail);
+        message.setSubject("Reset Your Password");
+        message.setText("Use this code to reset your password: " + code + "\n\nThis code expires in 15 minutes.");
+
+        mailSender.send(message);
+        System.out.println("Reset mail sent to " + toEmail);
+    }
 }
