@@ -1,0 +1,40 @@
+.tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #444;
+}
+
+.tabs button {
+    background: none;
+    border: none;
+    color: #aaa;
+    padding: 10px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.tabs button.active {
+    color: #61dafb;
+    border-bottom: 2px solid #61dafb;
+}
+
+.tab-content__list {
+    list-style: none;
+    padding: 0;
+}
+
+.tab-content__list-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    background-color: #333;
+    margin-bottom: 8px;
+    border-radius: 4px;
+}
+
+.tab-content__list-actions {
+    display: flex;
+    gap: 5px;
+}

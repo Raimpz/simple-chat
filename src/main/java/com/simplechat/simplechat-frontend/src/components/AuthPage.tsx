@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import apiClient from '../api';
 import axios from 'axios';
+import PageAnimation from './page-animation/PageAnimation'; 
 
 interface AuthPageProps {
     onLogin: (token: string) => void;
@@ -16,6 +17,27 @@ const AuthPage: React.FC<AuthPageProps> = ({ onLogin }) => {
     const [code, setCode] = useState<string>('');
     const [error, setError] = useState<string | null>(null);
     const [successMsg, setSuccessMsg] = useState<string | null>(null);
+    const [showAnimation, setShowAnimation] = useState<boolean>(false);
+    const [animationPhase, setAnimationPhase] = useState<'fade-in' | 'fade-out' | 'hidden'>('fade-in');
+    const [showAuthContainer, setShowAuthContainer] = useState<boolean>(false);
+
+    useEffect(() => {
+        setShowAnimation(true);
+
+        const fadeInTimer = setTimeout(() => {
+            setAnimationPhase('fade-out');
+        }, 1000);
+
+        const showAuthTimer = setTimeout(() => {
+            setShowAuthContainer(true);
+        }, 2000);
+
+        return () => {
+            clearTimeout(fadeInTimer);
+            clearTimeout(showAuthTimer);
+            setShowAnimation(false);
+        };
+    }, []);
 
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
@@ -86,79 +108,82 @@ const AuthPage: React.FC<AuthPageProps> = ({ onLogin }) => {
     };
 
     return (
-        <div className="auth-container">
-            <form onSubmit={handleSubmit} className="auth-form">
-                <h2>
-                    {view === 'LOGIN' && 'Login'}
-                    {view === 'REGISTER' && 'Create Account'}
-                    {view === 'VERIFY' && 'Verify Account'}
-                    {view === 'FORGOT' && 'Reset Password'}
-                    {view === 'RESET' && 'Set New Password'}
-                </h2>
+        <div>
+            {showAnimation && <PageAnimation phase={animationPhase} />}
+            <div className={`auth-container ${showAuthContainer ? 'auth-container--show' : ''}`}>
+                <form onSubmit={handleSubmit} className="auth-container__form">
+                    <h2>
+                        {view === 'LOGIN' && 'Login'}
+                        {view === 'REGISTER' && 'Create Account'}
+                        {view === 'VERIFY' && 'Verify Account'}
+                        {view === 'FORGOT' && 'Reset Password'}
+                        {view === 'RESET' && 'Set New Password'}
+                    </h2>
 
-                {error && <p className="error-message" style={{color: 'red'}}>{error}</p>}
-                {successMsg && <p className="success-message" style={{color: 'green'}}>{successMsg}</p>}
-                {view !== 'VERIFY' && (
-                    <input
-                        type="text"
-                        placeholder="Username"
-                        value={username}
-                        onChange={(e) => setUsername(e.target.value)}
-                        required
-                    />
-                )}
-                {(view === 'REGISTER' || view === 'VERIFY' || view === 'FORGOT' || view === 'RESET') && (
-                    <input
-                        type="email"
-                        placeholder="Email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        required
-                    />
-                )}
-                {(view === 'LOGIN' || view === 'REGISTER' || view === 'RESET') && (
-                    <input
-                        type="password"
-                        placeholder="Password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        required
-                    />
-                )}
-                {(view === 'VERIFY' || view === 'RESET') && (
-                    <input
-                        type="text"
-                        placeholder="Enter 6-digit Code"
-                        value={code}
-                        onChange={(e) => setCode(e.target.value)}
-                        required
-                        maxLength={6}
-                    />
-                )}
-                <button type="submit">
-                    {view === 'LOGIN' ? 'Login' : (view === 'VERIFY' ? 'Verify Code' : 'Sign Up')}
-                </button>
-            </form>
-            <div className="auth-links" style={{marginTop: '15px', display: 'flex', flexDirection: 'column', gap: '10px'}}>
-                {view === 'LOGIN' && (
-                    <>
-                        <button onClick={() => switchView('REGISTER')} className="toggle-button">
-                            Need an account? Register
-                        </button>
-                        <button onClick={() => switchView('VERIFY')} className="toggle-button">
-                            Have a code? Verify Account
-                        </button>
-                        <button onClick={() => switchView('FORGOT')}  className="toggle-button">
-                            Forgot Password?
-                        </button>
-                    </>
-                )}
-
-                {(view === 'VERIFY' || view === 'REGISTER') && (
-                    <button onClick={() => switchView('LOGIN')} className="toggle-button">
-                        Back to Login
+                    {error && <p className="error-message">{error}</p>}
+                    {successMsg && <p className="success-message">{successMsg}</p>}
+                    {view !== 'VERIFY' && (
+                        <input
+                            type="text"
+                            placeholder="Username"
+                            value={username}
+                            onChange={(e) => setUsername(e.target.value)}
+                            required
+                        />
+                    )}
+                    {(view === 'REGISTER' || view === 'VERIFY' || view === 'FORGOT' || view === 'RESET') && (
+                        <input
+                            type="email"
+                            placeholder="Email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            required
+                        />
+                    )}
+                    {(view === 'LOGIN' || view === 'REGISTER' || view === 'RESET') && (
+                        <input
+                            type="password"
+                            placeholder="Password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            required
+                        />
+                    )}
+                    {(view === 'VERIFY' || view === 'RESET') && (
+                        <input
+                            type="text"
+                            placeholder="Enter 6-digit Code"
+                            value={code}
+                            onChange={(e) => setCode(e.target.value)}
+                            required
+                            maxLength={6}
+                        />
+                    )}
+                    <button className="button--ghost" type="submit">
+                        {view === 'LOGIN' ? 'Login' : (view === 'VERIFY' ? 'Verify Code' : (view === 'FORGOT' ? 'Start password reset process' : 'Sign Up'))}
                     </button>
-                )}
+                </form>
+                <div className="auth-container__links">
+                    {view === 'LOGIN' && (
+                        <>
+                            <button onClick={() => switchView('REGISTER')} className="button--ghost">
+                                Need an account? Register
+                            </button>
+                            <button onClick={() => switchView('VERIFY')} className="button--ghost">
+                                Have a code? Verify Account
+                            </button>
+                            <button onClick={() => switchView('FORGOT')}  className="button--ghost">
+                                Forgot Password?
+                            </button>
+                        </>
+                    )}
+
+                    {(view === 'VERIFY' || view === 'REGISTER' || view === 'FORGOT') && (
+                        <button onClick={() => switchView('LOGIN')} className="button--ghost">
+                            Back to Login
+                        </button>
+                    )}
+                </div>
             </div>
         </div>
     );
