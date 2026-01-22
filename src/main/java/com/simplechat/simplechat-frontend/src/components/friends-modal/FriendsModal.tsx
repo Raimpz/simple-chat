@@ -15,12 +15,17 @@ const [searchQuery, setSearchQuery] = useState('');
 const [searchResults, setSearchResults] = useState<UserDto[]>([]);
 const [searchMessage, setSearchMessage] = useState('');
 const [pendingRequests, setPendingRequests] = useState<FriendRequest[]>([]);
+const [error, setError] = useState<string | null>(null);
+const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
 useEffect(() => {
-    if (isOpen && activeTab === 'pending') {
+    if (isOpen) {
         fetchPendingRequests();
     }
-}, [isOpen, activeTab]);
+
+    setError(null);
+    setSuccessMsg(null);
+}, [isOpen]);
 
 const fetchPendingRequests = async () => {
     try {
@@ -28,12 +33,16 @@ const fetchPendingRequests = async () => {
         setPendingRequests(response.data);
     } catch (error) {
         console.error(error);
+        setError('Failed to load pending requests.');
     }
 };
 
 const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!searchQuery.trim()) return;
+
+    setError(null);
+    setSuccessMsg(null);
 
     try {
         const response = await apiClient.get<UserDto[]>(`/users/search?query=${searchQuery}`);
@@ -43,27 +52,35 @@ const handleSearch = async (e: React.FormEvent) => {
         else setSearchMessage('');
     } catch (error) {
         console.error(error);
-        setSearchMessage('Error searching users.');
+        setSearchMessage('');
+        setError('Error searching users.');
     }
 };
 
 const sendFriendRequest = async (userId: number) => {
+    setError(null);
+    setSuccessMsg(null);
+
     try {
         await apiClient.post(`/friends/request/${userId}`);
-        alert('Friend request sent!');
+        setSuccessMsg('Friend request sent!');
         setSearchResults((prev) => prev.filter(u => u.id !== userId));
     } catch (error) {
-        alert('Failed to send request (maybe already sent?)');
+        setError('Failed to send request. It may have already been sent.');
     }
 };
 
 const respondToRequest = async (requestId: number, status: 'ACCEPTED' | 'DECLINED') => {
+    setError(null);
+    setSuccessMsg(null);
+
     try {
         await apiClient.post(`/friends/respond/${requestId}`, { status });
         setPendingRequests((prev) => prev.filter(req => req.id !== requestId));
+        setSuccessMsg(`Friend request ${status.toLowerCase()}!`);
     } catch (error) {
         console.error(error);
-        alert('Failed to respond.');
+        setError('Failed to respond to friend request.');
     }
 };
 
@@ -74,6 +91,8 @@ return (
         <div className="modal-content">
             <button className="button--icon" onClick={onClose}>X</button>
             <h2>Manage Friends</h2>
+            {error && <p className="error-message">{error}</p>}
+            {successMsg && <p className="success-message">{successMsg}</p>}
             <Tabs
                 tabs={[
                     { 

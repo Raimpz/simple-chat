@@ -33,11 +33,37 @@ public class FriendService {
 
         Optional<FriendRequest> existingRequest = friendRequestRepository
                 .findBySenderIdAndReceiverId(sender.getId(), receiverId);
+
+        if (existingRequest.isPresent()) {
+            FriendRequest req = existingRequest.get();
+
+            if (req.getStatus() == FriendStatus.PENDING) {
+                throw new IllegalStateException("Friend request already pending.");
+            }
+
+            if (req.getStatus() == FriendStatus.ACCEPTED) {
+                throw new IllegalStateException("You are already friends.");
+            }
+
+            if (req.getStatus() == FriendStatus.DECLINED) {
+                req.setStatus(FriendStatus.PENDING);
+                req.setCreatedAt(LocalDateTime.now());
+                return friendRequestRepository.save(req);
+            }
+        }
+
         Optional<FriendRequest> reverseRequest = friendRequestRepository
                 .findBySenderIdAndReceiverId(receiverId, sender.getId());
 
-        if (existingRequest.isPresent() || reverseRequest.isPresent()) {
-            throw new IllegalStateException("A friend request already exists between these users.");
+        if (reverseRequest.isPresent()) {
+            FriendRequest req = reverseRequest.get();
+            
+            if (req.getStatus() == FriendStatus.PENDING) {
+                throw new IllegalStateException("This user has already sent you a request. Check your inbox!");
+            }
+            if (req.getStatus() == FriendStatus.ACCEPTED) {
+                throw new IllegalStateException("You are already friends.");
+            }
         }
 
         FriendRequest newRequest = new FriendRequest();

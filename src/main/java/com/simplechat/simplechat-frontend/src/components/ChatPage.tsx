@@ -30,6 +30,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ token, currentUser }) => {
     const topSentinelRef = useRef<HTMLDivElement>(null);
     const messageContainerRef = useRef<HTMLDivElement>(null);
     const isInitializing = useRef(false);
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8081';
 
     useEffect(() => {
         const fetchFriends = async () => {
@@ -50,7 +51,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ token, currentUser }) => {
 
     useEffect(() => {
         const client = new Client({
-            webSocketFactory: () => new SockJS('http://localhost:8081/ws'),
+            webSocketFactory: () => new SockJS(`${API_URL}/ws`),
             connectHeaders: {
                 Authorization: `Bearer ${token}`,
             },

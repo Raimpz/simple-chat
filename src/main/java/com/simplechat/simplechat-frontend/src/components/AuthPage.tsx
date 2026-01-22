@@ -94,7 +94,10 @@ const AuthPage: React.FC<AuthPageProps> = ({ onLogin }) => {
         } catch (err: any) {
             if (axios.isAxiosError(err) && err.response?.data) {
                 const data = err.response.data;
-                setError(typeof data === 'object' && data.error ? data.error : JSON.stringify(data));
+                const key = Object.keys(data)[0];
+                const errorMessage = data[key];
+
+                setError(errorMessage || 'An unexpected error occurred.');
             } else {
                 setError('An unexpected error occurred.');
             }

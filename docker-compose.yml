@@ -27,15 +27,21 @@ services:
       ENCRYPTION_SECRET: ${ENCRYPTION_KEY}
       SPRING_MAIL_HOST: mailhog
       SPRING_MAIL_PORT: 1025
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
     depends_on:
       - postgres
     restart: always
 
   frontend:
-    build: ./src/main/java/com/simplechat/simplechat-frontend 
+    build: 
+      context: ./src/main/java/com/simplechat/simplechat-frontend
+      args:
+        VITE_API_URL: ${VITE_API_URL}
     container_name: simplechat-frontend
     ports:
       - "3003:80"
+    environment:
+      VITE_API_URL: ${VITE_API_URL}
     depends_on:
       - backend
 
