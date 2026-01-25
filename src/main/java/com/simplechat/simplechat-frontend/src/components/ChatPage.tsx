@@ -207,6 +207,10 @@ const ChatPage: React.FC<ChatPageProps> = ({ token, currentUser }) => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     };
 
+    const handleCloseChat = () => {
+        setSelectedFriend(null);
+    };
+
     if (loadingFriends) { return <div>Loading...</div>; }
 
     return (
@@ -240,6 +244,9 @@ const ChatPage: React.FC<ChatPageProps> = ({ token, currentUser }) => {
                 <>
                     <div className="chat-window__header"><h2>Chat with {selectedFriend.username}</h2></div>
                     <div className="chat-window__messages" ref={messageContainerRef}>
+                        <div className="chat-window__messages-navigation">
+                            <svg className="chat-window__messages-navigation-button" onClick={handleCloseChat} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><path d="M32 15H3.41l8.29-8.29-1.41-1.42-10 10a1 1 0 0 0 0 1.41l10 10 1.41-1.41L3.41 17H32z" data-name="4-Arrow Left" fill="currentColor"/></svg>
+                        </div>
                         <div ref={topSentinelRef} style={{ height: '10px' }} />
                         {page > 0 && loadingMessages && <p style={{textAlign:'center', color:'#888'}}>Loading history...</p>}
                         {page === 0 && loadingMessages ? (

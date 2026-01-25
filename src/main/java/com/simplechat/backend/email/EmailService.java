@@ -15,7 +15,7 @@ public class EmailService {
 
     public void sendVerificationEmail(String toEmail, String code) {
         SimpleMailMessage message = new SimpleMailMessage();
-        message.setFrom("noreply@simplechat.com");
+        message.setFrom("noreply@simplechat.ee");
         message.setTo(toEmail);
         message.setSubject("Verify your SimpleChat Account");
         message.setText("Welcome! Your verification code is: " + code);
@@ -26,7 +26,7 @@ public class EmailService {
 
     public void sendPasswordResetEmail(String toEmail, String code) {
         SimpleMailMessage message = new SimpleMailMessage();
-        message.setFrom("noreply@simplechat.com");
+        message.setFrom("noreply@simplechat.ee");
         message.setTo(toEmail);
         message.setSubject("Reset Your Password");
         message.setText("Use this code to reset your password: " + code + "\n\nThis code expires in 15 minutes.");
